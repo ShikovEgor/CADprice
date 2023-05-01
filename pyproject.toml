@@ -1,0 +1,6 @@
+[tool.pytest.ini_options]
+addopts = "--capture=tee-sys -q"
+log_cli = 1
+log_cli_level = "INFO"
+
+testpaths = ["tests"]
