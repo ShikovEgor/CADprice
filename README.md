@@ -1,10 +1,11 @@
-# CAD -> CAM -> Price Framework
+# CAD -> Technology Graph -> Price Framework
 This framework is designed to address the following challenges:
 
-- Inferring machining features from CAD models
-- Deriving technological graphs based on machining features
+- Inferring machining features from CAD models with PMI data
+- Deriving [technology graphs](docs/Technology%20Graph.md) based on machining features and corresponding CAM operations
 - Estimating manufacturing costs from the technological graph
-- Evaluating CAD model likelihood*
+
+![image](docs/imgs/general.png)
 
 A comprehensive description of the proposed solution can be found in the [Architecture section](docs/Architecture.md)
 
