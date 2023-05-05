@@ -15,41 +15,6 @@ class MFTestDataset(BaseDataset):
     def num_classes():
         return 2
 
-    def __init__(
-        self,
-        root_dir,
-        split="train",
-        center_and_scale=True,
-        random_rotate=False,
-        allow_list=None,
-    ):
-        """
-        Args:
-            root_dir (str): Root path of dataset
-            split (str, optional): Data split to load. Defaults to "train".
-            center_and_scale (bool, optional): Whether to center and scale the solid. Defaults to True.
-            random_rotate (bool, optional): Whether to apply random rotations to the solid in 90 degree increments. Defaults to False.
-        """
-        assert split in ("train", "val", "test")
-        path = pathlib.Path(root_dir)
-        self.allow_list = allow_list
-        self.raw_dir = path.parent.joinpath("raw")
-        self.path = path
-
-        split_filelist = [x for x in os.listdir(path) if ".bin" in x]
-
-        self.random_rotate = random_rotate
-
-        all_files = []
-        for fn in split_filelist:
-            if self.allow_list is not None:
-                if path.joinpath(fn).stem in self.allow_list:
-                    all_files.append(path.joinpath(fn))
-
-        # Load graphs
-        self.load_graphs(all_files, center_and_scale)
-        print("Done loading {} files".format(len(self.data)))
-
     def get_mechanical_features(self, filename):
         features = []
         with open(self.raw_dir.joinpath(f"{filename}.FRT"), "r") as f:
@@ -62,7 +27,9 @@ class MFTestDataset(BaseDataset):
         self.data = []
         pool = Pool(processes=50)
         try:
-            samples = list(tqdm(pool.imap(self.load_one_graph, file_paths), total=len(file_paths)))
+            samples = list(
+                tqdm(pool.imap(self.load_one_graph, file_paths), total=len(file_paths))
+            )
         except KeyboardInterrupt:
             pool.terminate()
             pool.join()
@@ -79,7 +46,9 @@ class MFTestDataset(BaseDataset):
         # Load the graph using base class method
         sample = super().load_one_graph(file_path)
         file_path = pathlib.Path(file_path)
-        shape, mapping = Compound.load_step_with_attributes(self.raw_dir.joinpath(f"{file_path.stem}.stp"))
+        shape, mapping = Compound.load_step_with_attributes(
+            self.raw_dir.joinpath(f"{file_path.stem}.stp")
+        )
         mechanical_features = self.get_mechanical_features(file_path.stem)
         flat_faces = []
         [flat_faces.extend(x) for x in mechanical_features]
@@ -94,6 +63,8 @@ class MFTestDataset(BaseDataset):
             except KeyError as e:
                 pass
         sample["graph"].ndata["y"] = torch.tensor(truth).long()
-        sample["mechanical_features"] = [[index_map[y] for y in x] for x in mechanical_features]
+        sample["mechanical_features"] = [
+            [index_map[y] for y in x] for x in mechanical_features
+        ]
         sample["shape"] = shape
         return sample

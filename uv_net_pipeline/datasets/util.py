@@ -1,8 +1,21 @@
+import math
 import random
 
 import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
+
+
+def split_list_by_share(lst, ratios):
+    lst = list(lst)
+    result = []
+    total_length = len(lst)
+    start = 0
+    for ratio in ratios:
+        end = start + math.ceil(ratio * total_length)
+        result.append(lst[start:end])
+        start = end
+    return result
 
 
 def bounding_box_uvgrid(inp: torch.Tensor):
@@ -51,5 +64,7 @@ def rotate_uvgrid(inp, rotation):
     Rmat = torch.tensor(rotation.as_matrix()).float()
     orig_size = inp[..., :3].size()
     inp[..., :3] = torch.mm(inp[..., :3].view(-1, 3), Rmat).view(orig_size)  # Points
-    inp[..., 3:6] = torch.mm(inp[..., 3:6].view(-1, 3), Rmat).view(orig_size)  # Normals/tangents
+    inp[..., 3:6] = torch.mm(inp[..., 3:6].view(-1, 3), Rmat).view(
+        orig_size
+    )  # Normals/tangents
     return inp

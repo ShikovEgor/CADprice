@@ -1,4 +1,5 @@
 import json
+import os
 import pathlib
 import signal
 from logging import Logger
@@ -10,8 +11,9 @@ import torch
 from occwl.compound import Compound
 from occwl.graph import face_adjacency
 from occwl.uvgrid import ugrid, uvgrid
-from uv_net_pipeline.settings import UVNetPipelineSettings
 from tqdm import tqdm
+
+from uv_net_pipeline.settings import UVNetPipelineSettings
 
 
 def initializer():
@@ -37,21 +39,21 @@ class Preprocessor:
             points = uvgrid(
                 face,
                 method="point",
-                num_u=self._settings.surf_num_u_samples,
-                num_v=self._settings.surf_num_v_samples,
+                num_u=self._settings.preprocessor_settings.surf_num_u_samples,
+                num_v=self._settings.preprocessor_settings.surf_num_v_samples,
             )
-            # print(points)
+
             normals = uvgrid(
                 face,
                 method="normal",
-                num_u=self._settings.surf_num_u_samples,
-                num_v=self._settings.surf_num_v_samples,
+                num_u=self._settings.preprocessor_settings.surf_num_u_samples,
+                num_v=self._settings.preprocessor_settings.surf_num_v_samples,
             )
             visibility_status = uvgrid(
                 face,
                 method="visibility_status",
-                num_u=self._settings.surf_num_u_samples,
-                num_v=self._settings.surf_num_v_samples,
+                num_u=self._settings.preprocessor_settings.surf_num_u_samples,
+                num_v=self._settings.preprocessor_settings.surf_num_v_samples,
             )
             mask = np.logical_or(
                 visibility_status == 0, visibility_status == 2
@@ -70,8 +72,16 @@ class Preprocessor:
             if not edge.has_curve():
                 continue
             # Compute U-grids
-            points = ugrid(edge, method="point", num_u=self._settings.curv_num_u_samples)
-            tangents = ugrid(edge, method="tangent", num_u=self._settings.curv_num_u_samples)
+            points = ugrid(
+                edge,
+                method="point",
+                num_u=self._settings.preprocessor_settings.curv_num_u_samples,
+            )
+            tangents = ugrid(
+                edge,
+                method="tangent",
+                num_u=self._settings.preprocessor_settings.curv_num_u_samples,
+            )
             # Concatenate channel-wise to form edge feature tensor
             edge_feat = np.concatenate((points, tangents), axis=-1)
             graph_edge_feat.append(edge_feat)
@@ -93,11 +103,21 @@ class Preprocessor:
             solid, mapping = Compound.load_step_with_attributes(str(filename))
 
             if self._settings.convert_labels:
-                labels = [int(mapping[face]["name"]) for face in solid.faces() if face in mapping]
-                with open(str(output_path) + "_labels/" + fn_stem + ".json", "w") as f:
+                label_dir = output_path.joinpath("labels")
+                if not label_dir.exists():
+                    os.mkdir(label_dir)
+
+                labels = [
+                    int(mapping[face]["name"])
+                    for face in solid.faces()
+                    if face in mapping
+                ]
+                with open(label_dir.joinpath(fn_stem + ".json"), "w") as f:
                     json.dump(labels, f)
             graph = self.build_graph(solid)
-            dgl.data.utils.save_graphs(str(output_path.joinpath(fn_stem + ".bin")), [graph])  # _color
+            dgl.data.utils.save_graphs(
+                str(output_path.joinpath(fn_stem + ".bin")), [graph]
+            )  # _color
         except Exception as e:
             self._logger.error(f"Error processing {filename}: {str(e)}")
 
@@ -111,7 +131,11 @@ class Preprocessor:
         self._logger.info(f"Found {len(step_files)} to process")
         pool = Pool(processes=self._settings.num_processes, initializer=initializer)
         try:
-            results = list(tqdm(pool.imap(self.process_one_file, step_files), total=len(step_files)))
+            results = list(
+                tqdm(
+                    pool.imap(self.process_one_file, step_files), total=len(step_files)
+                )
+            )
         except KeyboardInterrupt:
             pool.terminate()
             pool.join()

@@ -34,7 +34,9 @@ class Plotter:
         color_mapper = get_cmap("rainbow")
         face_colors = color_mapper(norm_values_for_faces)[:, :3]
 
-        v.display_face_colormap(data["shape"], values_for_faces=[self.index[x] for x in labels])
+        v.display_face_colormap(
+            data["shape"], values_for_faces=[self.index[x] for x in labels]
+        )
         fig, ax = plt.subplots()
         fig.set_size_inches(0.5, 0.5)
         # Add labels to the legend without plotting data
@@ -66,5 +68,7 @@ class Plotter:
     def plot_truth(data):
         """Plot gt - plots additional shape with ground truth labels"""
         v = JupyterViewer()
-        v.display_face_colormap(data["shape"], values_for_faces=data["graph"].ndata["y"])
+        v.display_face_colormap(
+            data["shape"], values_for_faces=data["graph"].ndata["y"]
+        )
         v.show()
