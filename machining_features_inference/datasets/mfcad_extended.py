@@ -1,15 +1,16 @@
 import json
+import os
 import pathlib
 
 import torch
 
-from uv_net_pipeline.datasets.base import BaseDataset
+from machining_features_inference.datasets.base import BaseDataset
 
 
-class MFCADDataset(BaseDataset):
+class MFCADPDataset(BaseDataset):
     @staticmethod
     def num_classes():
-        return 16
+        return 25
 
     def __init__(
         self,
@@ -34,25 +35,18 @@ class MFCADDataset(BaseDataset):
             center_and_scale (bool, optional): Whether to center and scale the solid. Defaults to True.
             random_rotate (bool, optional): Whether to apply random rotations to the solid in 90 degree increments. Defaults to False.
         """
-        path = pathlib.Path(root_dir)
+        path = pathlib.Path(root_dir).joinpath(split)
+        self.labels_path = pathlib.Path(str(path) + "_labels")
         self.path = path
+
         assert split in ("train", "val", "test")
-
-        with open(str(str(path.joinpath("split.json"))), "r") as read_file:
-            filelist = json.load(read_file)
-
-        if split == "train":
-            split_filelist = filelist["train"]
-        elif split == "val":
-            split_filelist = filelist["validation"]
-        else:
-            split_filelist = filelist["test"]
+        split_filelist = os.listdir(path)
 
         self.random_rotate = random_rotate
 
         all_files = []
         for fn in split_filelist:
-            all_files.append(path.joinpath("graph").joinpath(fn + ".bin"))
+            all_files.append(path.joinpath(fn))
 
         # Load graphs
         print(f"Loading {split} data...")
@@ -63,12 +57,8 @@ class MFCADDataset(BaseDataset):
         # Load the graph using base class method
         sample = super().load_one_graph(file_path)
         # Additionally load the label and store it as node data
-        label_file = self.path.joinpath("labels").joinpath(file_path.stem + "_ids.json")
+        label_file = self.labels_path.joinpath(file_path.stem + ".json")
         with open(str(label_file), "r") as read_file:
-            labels_data = json.load(read_file)
-        label = []
-        for face in labels_data["body"]["faces"]:
-            index = face["segment"]["index"]
-            label.append(index)
-        sample["graph"].ndata["y"] = torch.tensor(label).long()
+            labels_data = [int(x) for x in json.load(read_file)]
+        sample["graph"].ndata["y"] = torch.tensor(labels_data).long()
         return sample

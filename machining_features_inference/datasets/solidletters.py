@@ -4,7 +4,7 @@ import string
 import torch
 from sklearn.model_selection import train_test_split
 
-from uv_net_pipeline.datasets.base import BaseDataset
+from machining_features_inference.datasets.base import BaseDataset
 
 
 def _get_filenames(root_dir, filelist):

@@ -10,8 +10,8 @@ from torch import FloatTensor
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from uv_net_pipeline.datasets import util
-from uv_net_pipeline.settings import UVNetPipelineSettings
+from machining_features_inference.datasets import util
+from machining_features_inference.settings import UVNetPipelineSettings
 
 
 class UniversalDataset(Dataset):
@@ -127,10 +127,10 @@ class UniversalDataset(Dataset):
         batched_filenames = [sample["filename"] for sample in batch]
         return {"graph": batched_graph, "filename": batched_filenames}
 
-    def get_dataloader(self):
+    def get_dataloader(self) -> DataLoader:
         return DataLoader(
             self,
-            batch_size=self._settings.model_factory_settings.batch_size,
+            batch_size=self._settings.batch_size,
             shuffle=False,
             collate_fn=self._collate,
             num_workers=self._settings.num_processes,  # Can be set to non-zero on Linux

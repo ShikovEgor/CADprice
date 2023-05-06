@@ -10,14 +10,16 @@ namespace configurations {
         --Dataset settings--
         +center_and_scale: bool = True
         +random_rotate: bool = True
-        --Learning Parameters--
         +batch_size: int = 128
+        --Learning Parameters--
         +crv_in_channels: int = 6
-        +crv_emb_dim: int = 64,
+        +crv_emb_dim: int = 128,
         +srf_emb_dim: int = 64,
         +graph_emb_dim: int = 128,
         +dropout: float = 0.3,
         +num_epochs: int = 10
+        +lr: float = 0.0001
+        +weight_decay: float = 0.0005
     }
 
     class UVNetPreprocessorSettings {
@@ -46,31 +48,33 @@ namespace primitives {
     struct Node {
         Face of BREPGraph
         ==
-        +index: int
-        +surface_grid: tensor[int32]
-        +mf_label: Optional[int]
-        +node_embedding: Optional[tensor[int32]]
+        -index: int
+        -surface_grid: tensor[int32]
+        -mf_label: Optional[int]
+        -node_embedding: Optional[tensor[int32]]
     }
 
     struct Edge {
         Curve that connects two edges in BREPGraph
         ==
-        +index: int
-        +curve_grid: tensor[int32]
+        -index: int
+        -curve_grid: tensor[int32]
     }
 
     struct BREPGraph {
         BREPGraph extracted from STEP file
         ==
         .. Meta ..
-        +collection_id: str
-        +step_filename: str
-        +created_at: datetime
+        -collection_id: str
+        -step_filename: str
+        -created_at: datetime
         .. Structure ..
-        +nodes: List[Node]
-        +edges: List[Edge]
+        -nodes: List[Node]
+        -edges: List[Edge]
         .. Embedding ..
-        brep_embedding: tensor[int32]
+        -brep_embedding: tensor[int32]
+        --Methods--
+        +to_dgl(): -> DGL Graph
     }
     Node -d-* BREPGraph
     Edge -d-* BREPGraph
@@ -84,9 +88,10 @@ namespace data {
         -settings: configurations.DataRepositorySettings
         -logger: Logger
         .. Read ops ..
-        +load_graphs(collection_id: str): Iterable[BREPGraph]
+        +load_graphs(collection_id: str, split: Optional[Split]): Iterable[BREPGraph]
         .. Write ops ..
         +save_graphs(collection_id: str, Iterable[BREPGraph])
+        +save_labels(collection_id: str, Dict[step_filename, List[labels])
     }
     GraphDataRepository *-d- configurations.DataRepositorySettings
 
@@ -97,9 +102,9 @@ namespace data {
         -settings: configurations.DataRepositorySettings
         -logger: Logger
         .. Read ops ..
-        +load_model(model_id: str): UVNetModel
+        +load_model(model_id: str): MFDetector
         .. Write ops ..
-        +save_model(model: UVNetModel)
+        +save_model(model: MFDetector)
     }
     ModelRepository *-d- configurations.DataRepositorySettings
 
@@ -127,15 +132,17 @@ namespace models {
         +learn_model()
         +save_model()
     }
-    UVNetModelFactory --|> UVNetModel
+    UVNetModelFactory --|> MFDetector
     UVNetModelFactory *-d- configurations.UVNetModelFactorySettings
 
-    class UVNetModel {
-        Already learned UV-Net model
+    class MFDetector {
+        Already learned UV-Net model for machining feature detection
         ==
         -settings: configurations.UVNetModelSettings
         --Methods--
-        +infer(graphs: Iterable[BREPGraph]): Iterable[BREPGraph]
+        +train(graphs: Iterable[BREPGraph]): None
+        +test(graphs: Iterable[BREPGraph]): iou metric
+        +get_labels(graphs: Iterable[BREPGraph]): Dict[graph_id, List[labels]]]
         +save_results(labelled_graphs: Iterable[BREPGraph])
     }
 
@@ -149,11 +156,14 @@ namespace pipelines {
         .. Dependecies ..
         -settings: configurations
         -preprocessor: abstracts.IPreprocessor
+        -data_repository: data.GraphDataRepository
+        -model_repository: data.ModelRepository
         -logger: Logger
         .. Methods ..
         +run()
     }
     BaseUVNetPipeline *-d- data.GraphDataRepository
+    BaseUVNetPipeline *-d- data.ModelRepository
     BaseUVNetPipeline *-d- preprocessors.UVNetPreprocessor
 
 
@@ -168,17 +178,16 @@ namespace pipelines {
     }
 
     UVNetLearningPipeline *-d- models.UVNetModelFactory
-    UVNetLearningPipeline *-d- data.ModelRepository
 
       class UVNetInferencePipeline implements BaseUVNetPipeline{
         Model learning and inference pipeline
         ==
         .. Dependecies ..
-        -model: models.UVNetModel
+        -model: models.MFDetector
         .. Methods ..
         +run()
     }
-    UVNetInferencePipeline *-d- models.UVNetModel
+    UVNetInferencePipeline *-d- models.MFDetector
 }
 
 @enduml

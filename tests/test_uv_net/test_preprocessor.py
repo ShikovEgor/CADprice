@@ -3,10 +3,11 @@ import os
 
 from pytest import mark
 
+from machining_features_inference.datasets.universal_dataset import \
+    UniversalDataset
+from machining_features_inference.preprocessor import Preprocessor
 from tests.base import (cleanup_dir, inference_settings, learning_settings,
                         logger)
-from uv_net_pipeline.datasets.universal_dataset import UniversalDataset
-from uv_net_pipeline.preprocessor import Preprocessor
 
 
 def test_processor():

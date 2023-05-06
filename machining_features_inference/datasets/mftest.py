@@ -7,7 +7,7 @@ import torch
 from occwl.compound import Compound
 from tqdm import tqdm
 
-from uv_net_pipeline.datasets.base import BaseDataset
+from machining_features_inference.datasets.base import BaseDataset
 
 
 class MFTestDataset(BaseDataset):

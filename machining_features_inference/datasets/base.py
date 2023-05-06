@@ -6,7 +6,7 @@ from torch import FloatTensor
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from uv_net_pipeline.datasets import util
+from machining_features_inference.datasets import util
 
 
 class BaseDataset(Dataset):

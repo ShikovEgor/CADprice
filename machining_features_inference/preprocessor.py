@@ -13,7 +13,7 @@ from occwl.graph import face_adjacency
 from occwl.uvgrid import ugrid, uvgrid
 from tqdm import tqdm
 
-from uv_net_pipeline.settings import UVNetPipelineSettings
+from machining_features_inference.settings import UVNetPipelineSettings
 
 
 def initializer():
@@ -39,21 +39,21 @@ class Preprocessor:
             points = uvgrid(
                 face,
                 method="point",
-                num_u=self._settings.preprocessor_settings.surf_num_u_samples,
-                num_v=self._settings.preprocessor_settings.surf_num_v_samples,
+                num_u=self._settings.surf_num_u_samples,
+                num_v=self._settings.surf_num_v_samples,
             )
 
             normals = uvgrid(
                 face,
                 method="normal",
-                num_u=self._settings.preprocessor_settings.surf_num_u_samples,
-                num_v=self._settings.preprocessor_settings.surf_num_v_samples,
+                num_u=self._settings.surf_num_u_samples,
+                num_v=self._settings.surf_num_v_samples,
             )
             visibility_status = uvgrid(
                 face,
                 method="visibility_status",
-                num_u=self._settings.preprocessor_settings.surf_num_u_samples,
-                num_v=self._settings.preprocessor_settings.surf_num_v_samples,
+                num_u=self._settings.surf_num_u_samples,
+                num_v=self._settings.surf_num_v_samples,
             )
             mask = np.logical_or(
                 visibility_status == 0, visibility_status == 2
@@ -75,12 +75,12 @@ class Preprocessor:
             points = ugrid(
                 edge,
                 method="point",
-                num_u=self._settings.preprocessor_settings.curv_num_u_samples,
+                num_u=self._settings.curv_num_u_samples,
             )
             tangents = ugrid(
                 edge,
                 method="tangent",
-                num_u=self._settings.preprocessor_settings.curv_num_u_samples,
+                num_u=self._settings.curv_num_u_samples,
             )
             # Concatenate channel-wise to form edge feature tensor
             edge_feat = np.concatenate((points, tangents), axis=-1)
@@ -128,7 +128,7 @@ class Preprocessor:
             output_path.mkdir(parents=True, exist_ok=True)
             self._logger.info(f"Created output directory {output_path}")
         step_files = list(input_path.glob("*.st*p"))
-        self._logger.info(f"Found {len(step_files)} to process")
+        self._logger.info(f"Found {len(step_files)} STEP files to preprocess")
         pool = Pool(processes=self._settings.num_processes, initializer=initializer)
         try:
             results = list(

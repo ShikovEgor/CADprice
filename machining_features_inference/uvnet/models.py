@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-import uv_net_pipeline.uvnet.encoders
+import machining_features_inference.uvnet.encoders
 
 
 class _NonLinearClassifier(nn.Module):
@@ -84,18 +84,24 @@ class UVNetSegmenter(nn.Module):
         """
         super().__init__()
         # A 1D convolutional network to encode B-rep edge geometry represented as 1D UV-grids
-        self.curv_encoder = uv_net_pipeline.uvnet.encoders.UVNetCurveEncoder(
-            in_channels=crv_in_channels, output_dims=crv_emb_dim
+        self.curv_encoder = (
+            machining_features_inference.uvnet.encoders.UVNetCurveEncoder(
+                in_channels=crv_in_channels, output_dims=crv_emb_dim
+            )
         )
         # A 2D convolutional network to encode B-rep face geometry represented as 2D UV-grids
-        self.surf_encoder = uv_net_pipeline.uvnet.encoders.UVNetSurfaceEncoder(
-            in_channels=7, output_dims=srf_emb_dim
+        self.surf_encoder = (
+            machining_features_inference.uvnet.encoders.UVNetSurfaceEncoder(
+                in_channels=7, output_dims=srf_emb_dim
+            )
         )
         # A graph neural network that message passes face and edge features
-        self.graph_encoder = uv_net_pipeline.uvnet.encoders.UVNetGraphEncoder(
-            srf_emb_dim,
-            crv_emb_dim,
-            graph_emb_dim,
+        self.graph_encoder = (
+            machining_features_inference.uvnet.encoders.UVNetGraphEncoder(
+                srf_emb_dim,
+                crv_emb_dim,
+                graph_emb_dim,
+            )
         )
         # A non-linear classifier that maps face embeddings to face logits
         self.seg = _NonLinearClassifier(

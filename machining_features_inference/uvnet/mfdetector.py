@@ -7,12 +7,12 @@ import torch.optim as optim
 import torchmetrics
 from tqdm import tqdm
 
-from uv_net_pipeline.evaluation.jaccard import get_mf_jaccard
-from uv_net_pipeline.settings import UVNetPipelineSettings
-from uv_net_pipeline.uvnet.models import UVNetSegmenter
+from machining_features_inference.evaluation.jaccard import get_mf_jaccard
+from machining_features_inference.settings import UVNetPipelineSettings
+from machining_features_inference.uvnet.models import UVNetSegmenter
 
 
-class Segmentation:
+class MFDetector:
     """
     module to train/test the segmenter (per-face classifier).
     """
@@ -27,28 +27,28 @@ class Segmentation:
         self.device = torch.device(settings.device)
         self.model = UVNetSegmenter(
             settings.num_classes,
-            crv_in_channels=settings.model_factory_settings.crv_in_channels,
-            dropout=settings.model_factory_settings.dropout,
-            srf_emb_dim=settings.model_factory_settings.srf_emb_dim,
-            crv_emb_dim=settings.model_factory_settings.crv_emb_dim,
+            crv_in_channels=settings.crv_in_channels,
+            dropout=settings.dropout,
+            srf_emb_dim=settings.srf_emb_dim,
+            crv_emb_dim=settings.crv_emb_dim,
         )
         self.model = self.model.to(device=self.device)
 
         self.optimizer = optim.Adam(
             self.model.parameters(),
-            lr=settings.model_factory_settings.lr,
-            weight_decay=settings.model_factory_settings.lr,
+            lr=settings.lr,
+            weight_decay=settings.lr,
         )
 
         self.feature_weights = torch.ones(
             settings.num_classes, device=self.device, dtype=torch.float
         )
-        for ifeat in settings.model_factory_settings.skip_labels:
+        for ifeat in settings.skip_labels:
             self.feature_weights[ifeat] = 0.0
         self.add_bias = torch.zeros(
             settings.num_classes, device=self.device, dtype=torch.float
         )
-        for ifeat in settings.model_factory_settings.skip_labels:
+        for ifeat in settings.skip_labels:
             self.add_bias[ifeat] = float("-inf")
 
         self.val_iou = torchmetrics.IoU(
