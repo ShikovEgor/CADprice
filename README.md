@@ -19,7 +19,7 @@ To run machining feature model learning run:
 python machining_features_inference/learn.py -i /path/to/inputs -o /path/to/outputs -n 25
 ```
 
-To ru inference pipeline:
+To run inference pipeline:
 ```shell
 python machining_features_inference/infer.py -i /path/to/inputs -o /path/to/outputs -m model_name
 ```
